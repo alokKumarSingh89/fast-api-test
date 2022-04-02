@@ -1,3 +1,4 @@
 .idea
 venv
+fast-api
 /app/__pycache__

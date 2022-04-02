@@ -1,8 +1,9 @@
 from http import HTTPStatus
 
-from fastapi import FastAPI, APIRouter, HTTPException, Request
+from fastapi import Depends, FastAPI, APIRouter, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
+from sqlalchemy.orm import Session
 
 from app.schemas import Recipe, RecipeCreate
 
@@ -39,11 +40,12 @@ api_router = APIRouter()
 
 
 @api_router.get("/", status_code=200)
-def root(req: Request) -> dict:
+def root(req: Request, db: Session = Depends(deps.get_db)) -> dict:
     """
     Root Get
     """
-    return TEMPLATE.TemplateResponse("index.html", {"request": req, "recipes": RECIPES})
+    recipes = crud.recipe.get_multi(db=db, limit=10)
+    return TEMPLATE.TemplateResponse("index.html", {"request": req, "recipes": recipes})
 
 
 @api_router.get("/recipe/{recipe_id}", status_code=200, response_model=Recipe)
