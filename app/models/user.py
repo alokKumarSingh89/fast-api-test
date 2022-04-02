@@ -11,4 +11,4 @@ class User(Base):
     email = Column(String, index=True, nullable=False)
     is_superuser = Column(Boolean, default=False)
     recipes = relationship(
-        "Recipe", cascade="all, delete-orphan", back_populates=True, uselist=True)
+        "Recipe", cascade="all, delete-orphan", back_populates="submitter", uselist=True)
