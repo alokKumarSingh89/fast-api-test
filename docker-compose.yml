@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo
+    container_name: 'mongo-local'
+    environment:
+      - MONOG_INITDB_DATABASE=fast-learn
+      - MONOG_INITDB_ROOT_USERNAME=docker
+      - MONOG_INITDB_ROOT_PASSWORD=123456
+    volumes:
+      - ~/mongodb:/data/db
+    ports:
+      - '27017:27017'
