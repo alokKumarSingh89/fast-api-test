@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Any, Optional
+import httpx
+import asyncio
 
 from app import crud
 from app.api import deps
@@ -8,6 +10,58 @@ from app.api import deps
 from app.schemas.recipe import Recipe, RecipeCreate, RecipeSearchResults
 
 router = APIRouter()
+
+
+def get_reddit_top(subreddit: str, data: dict) -> None:
+    response = httpx.get(f"https://www.reddit.com/r/{subreddit}/top.json?sort=top&t=day&limit=5",
+                         headers={"User-agent": "recipe bot 0.1"})
+    subreddit_recipe = response.json()
+
+    subreddit_data = []
+    for entry in subreddit_recipe["data"]["children"]:
+        score = entry["data"]["score"]
+        title = entry["data"]["title"]
+        link = entry["data"]["url"]
+        subreddit_data.append(f"{str(score)}: {title} ({link})")
+    data[subreddit] = subreddit_data
+
+
+async def get_reddit_top_async(subreddit: str, data: dict) -> None:  # 2
+    async with httpx.AsyncClient() as client:  # 3
+        response = await client.get(  # 4
+            f"https://www.reddit.com/r/{subreddit}/top.json?sort=top&t=day&limit=5",
+            headers={"User-agent": "recipe bot 0.1"},
+        )
+
+    subreddit_recipes = response.json()
+    subreddit_data = []
+    for entry in subreddit_recipes["data"]["children"]:
+        score = entry["data"]["score"]
+        title = entry["data"]["title"]
+        link = entry["data"]["url"]
+        subreddit_data.append(f"{str(score)}: {title} ({link})")
+    data[subreddit] = subreddit_data
+
+
+@router.get("/ideas/")
+def fetch_ideas() -> dict:
+    data: dict = {}
+    get_reddit_top("recipes", data)
+    get_reddit_top("easyrecipes", data)
+    get_reddit_top("TopSecretRecipes", data)
+    return data
+
+
+@router.get("/ideas/async")
+async def fetch_ideas_async() -> dict:
+    data: dict = {}
+    await asyncio.gather(  # 5
+        get_reddit_top_async("recipes", data),
+        get_reddit_top_async("easyrecipes", data),
+        get_reddit_top_async("TopSecretRecipes", data),
+    )
+
+    return data
 
 
 @router.get("/", status_code=200)

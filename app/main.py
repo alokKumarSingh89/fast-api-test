@@ -1,4 +1,5 @@
 from http import HTTPStatus
+import time
 from typing import List
 
 from fastapi import Depends, FastAPI, APIRouter, HTTPException, Request
@@ -30,6 +31,14 @@ def root(req: Request, db: Session = Depends(deps.get_db)) -> dict:
     recipes = crud.recipe.get_multi(db=db)
     return TEMPLATE.TemplateResponse("index.html", {"request": req, "recipes": recipes})
 
+
+@app.middleware("http")
+async def add_process_time(req: Request, call_next):
+    start_time = time.time()
+    res = await call_next(req)
+    process_time = time.time() - start_time
+    res.headers["X-Process-Time"] = str(process_time)
+    return res
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(root_router)
