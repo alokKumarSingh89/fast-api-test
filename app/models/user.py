@@ -12,3 +12,4 @@ class User(Base):
     is_superuser = Column(Boolean, default=False)
     recipes = relationship(
         "Recipe", cascade="all, delete-orphan", back_populates="submitter", uselist=True)
+    hashed_password = Column(String, nullable=False)

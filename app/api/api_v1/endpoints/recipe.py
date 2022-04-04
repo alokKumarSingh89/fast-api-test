@@ -10,6 +10,7 @@ from app.api import deps
 from app.schemas.recipe import Recipe, RecipeCreate, RecipeSearchResults
 
 router = APIRouter()
+RECIPE_SUBREDDITS = ["recipes", "easyrecipes", "TopSecretRecipes"]
 
 
 def get_reddit_top(subreddit: str, data: dict) -> None:
@@ -23,7 +24,7 @@ def get_reddit_top(subreddit: str, data: dict) -> None:
         title = entry["data"]["title"]
         link = entry["data"]["url"]
         subreddit_data.append(f"{str(score)}: {title} ({link})")
-    data[subreddit] = subreddit_data
+    return subreddit_data
 
 
 async def get_reddit_top_async(subreddit: str, data: dict) -> None:  # 2
@@ -40,28 +41,20 @@ async def get_reddit_top_async(subreddit: str, data: dict) -> None:  # 2
         title = entry["data"]["title"]
         link = entry["data"]["url"]
         subreddit_data.append(f"{str(score)}: {title} ({link})")
-    data[subreddit] = subreddit_data
+    return subreddit_data
 
 
 @router.get("/ideas/")
 def fetch_ideas() -> dict:
-    data: dict = {}
-    get_reddit_top("recipes", data)
-    get_reddit_top("easyrecipes", data)
-    get_reddit_top("TopSecretRecipes", data)
-    return data
+    return {key: get_reddit_top(subreddit=key) for key in RECIPE_SUBREDDITS}
 
 
 @router.get("/ideas/async")
 async def fetch_ideas_async() -> dict:
-    data: dict = {}
-    await asyncio.gather(  # 5
-        get_reddit_top_async("recipes", data),
-        get_reddit_top_async("easyrecipes", data),
-        get_reddit_top_async("TopSecretRecipes", data),
+    results = await asyncio.gather(
+        *[get_reddit_top_async(subreddit=subreddit) for subreddit in RECIPE_SUBREDDITS]
     )
-
-    return data
+    return dict(zip(RECIPE_SUBREDDITS, results))
 
 
 @router.get("/", status_code=200)
